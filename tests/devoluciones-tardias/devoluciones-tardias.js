@@ -1,23 +1,11 @@
-/**
- * Tests de Performance - Grupo: devoluciones-tardias
- * Casos de devolución tardía de préstamos con multa Fibonacci
- * Base URL: http://localhost:3000/api/v1
- * 
- * Data Strategy: SETUP_ACTION
- * Cada iteración: 1) POST crea préstamo dinámico (setup), 2) PATCH devuelve tarde (action medido)
- * Usa setupAndReturn() de testDataPresets.js
- */
-
 import http from 'k6/http';
 import { sleep, check } from 'k6';
 import { Trend } from 'k6/metrics';
 import { setupAndReturn } from '../helpers/testDataPresets.js';
 
-// ===== CUSTOM METRICS =====
 const TC_HU04_01_duration = new Trend('TC_HU04_01_duration');
 const TC_HU04_05_duration = new Trend('TC_HU04_05_duration');
 
-// ===== CONFIGURACIÓN =====
 const optionsGeneral = {
   executor: 'constant-vus',
   vus: 10,
@@ -37,43 +25,20 @@ export const options = {
       startTime: '10s'
     },
   },
-  /*
-  thresholds: {
-    'TC_HU04_01_duration': ['p(95)<500'],
-    'TC_HU04_05_duration': ['p(95)<500'],
-  }
-  */
 };
 
 const base_url = 'http://localhost:3000/api/v1';
 
-// ===== FUNCIONES POR CASO =====
-
-/**
- * TC-HU04-01: Devolución tardía con 1 día de mora (Fibonacci semana 1)
- * 
- * Data Strategy: SETUP_ACTION
- * Paso 1 (setup, no medido): POST /loans → crea préstamo con IDs únicos
- * Paso 2 (action, medido):   PATCH /loans → devuelve 1 día después del límite
- * 
- * loan_days=7 → date_limit=hoy+7 → date_return=hoy+8 → 1 día de mora
- * fib(1)=1 → 1 × 2.00 = 2.00
- * 
- * Correlación: TEST_CASES.md → HU-04 → TC-HU04-01
- */
 export function TC_HU04_01() {
   const start = Date.now();
-  
-  // Setup+Action: crea préstamo con IDs únicos y lo devuelve 1 día tarde
-  // returnDaysOffset=8: devuelve hoy+8, límite es hoy+7 → 1 día de mora
-  // baseFibAmount=2.00: monto base para cálculo Fibonacci
+
   const { actionRes: res, setupFailed } = setupAndReturn({
     returnDaysOffset: 8,
     baseFibAmount: 2.00,
     actionTag: 'TC_HU04_01',
   });
 
-  // Si el setup falló, no medir el action
+
   if (setupFailed || !res) {
     check(null, {
       '(TC_HU04_01)-----------------------------------------------': () => true === true,
@@ -133,25 +98,10 @@ export function TC_HU04_01() {
   sleep(1);
 }
 
-/**
- * TC-HU04-05: Devolución tardía con 22 días de mora (semana 4)
- * 
- * Data Strategy: SETUP_ACTION
- * Paso 1 (setup, no medido): POST /loans → crea préstamo con IDs únicos
- * Paso 2 (action, medido):   PATCH /loans → devuelve 22 días después del límite
- * 
- * loan_days=7 → date_limit=hoy+7 → date_return=hoy+29 → 22 días de mora
- * semana 4 → fib(4)=7 → 7 × 2.00 = 14.00
- * 
- * Correlación: TEST_CASES.md → HU-04 → TC-HU04-05
- */
+
 export function TC_HU04_05() {
   const start = Date.now();
   
-  // Setup+Action: crea préstamo con IDs únicos y lo devuelve 22 días tarde
-  // returnDaysOffset=29: devuelve hoy+29, límite es hoy+7 → 22 días de mora
-  // baseFibAmount=2.00: monto base para cálculo Fibonacci
-  // typeIdReader='DNI': tipo de ID del lector
   const { actionRes: res, setupFailed } = setupAndReturn({
     returnDaysOffset: 29,
     baseFibAmount: 2.00,
@@ -159,7 +109,6 @@ export function TC_HU04_05() {
     actionTag: 'TC_HU04_05',
   });
 
-  // Si el setup falló, no medir el action
   if (setupFailed || !res) {
     check(null, {
       '(TC_HU04_05)-----------------------------------------------': () => true === true,

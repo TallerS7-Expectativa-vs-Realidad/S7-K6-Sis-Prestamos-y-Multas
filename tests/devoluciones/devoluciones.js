@@ -1,22 +1,10 @@
-/**
- * Tests de Performance - Grupo: devoluciones
- * Casos de devolución de préstamos antes del plazo límite
- * Base URL: http://localhost:3000/api/v1
- * 
- * Data Strategy: SETUP_ACTION
- * Cada iteración: 1) POST crea préstamo dinámico (setup), 2) PATCH devuelve (action medido)
- * Usa setupAndReturn() de testDataPresets.js
- */
-
 import http from 'k6/http';
 import { sleep, check } from 'k6';
 import { Trend } from 'k6/metrics';
 import { setupAndReturn } from '../helpers/testDataPresets.js';
 
-// ===== CUSTOM METRICS =====
 const TC_HU03_01_duration = new Trend('TC_HU03_01_duration');
 
-// ===== CONFIGURACIÓN =====
 const optionsGeneral = {
   executor: 'constant-vus',
   vus: 10,
@@ -31,28 +19,11 @@ export const options = {
       startTime: '0s'
     },
   },
-  /*
-  thresholds: {
-    'TC_HU03_01_duration': ['p(95)<500'],
-  }
-  */
 };
 
 const base_url = 'http://localhost:3000/api/v1';
 
-// ===== FUNCIONES POR CASO =====
 
-/**
- * TC-HU03-01: Devolución antes del plazo límite
- * 
- * Data Strategy: SETUP_ACTION
- * Paso 1 (setup, no medido): POST /loans → crea préstamo con IDs únicos
- * Paso 2 (action, medido):   PATCH /loans → devuelve antes del plazo
- * 
- * loan_days=7 → date_limit=hoy+7 → date_return=hoy+5 → 2 días antes del límite
- * 
- * Correlación: TEST_CASES.md → HU-03 → TC-HU03-01
- */
 export function TC_HU03_01() {
   const start = Date.now();
   

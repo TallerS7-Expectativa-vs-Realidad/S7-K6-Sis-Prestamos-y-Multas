@@ -1,18 +1,10 @@
-/**
- * Tests de Performance - Grupo: loans-consulta
- * Casos de consulta de libros y su disponibilidad
- * Base URL: http://localhost:3000/api/v1
- */
-
 import http from 'k6/http';
 import { sleep, check } from 'k6';
 import { Trend } from 'k6/metrics';
 
-// ===== CUSTOM METRICS =====
 const TC_HU01_01_duration = new Trend('TC_HU01_01_duration');
 const TC_HU01_03_duration = new Trend('TC_HU01_03_duration');
 
-// ===== CONFIGURACIÓN =====
 const optionsGeneral = {
   executor: 'constant-vus',
   vus: 10,
@@ -32,25 +24,10 @@ export const options = {
       startTime: '10s'
     },
   },
-  /*
-  thresholds: {
-    'TC_HU01_01_duration': ['p(95)<500'],
-    'TC_HU01_03_duration': ['p(95)<500'],
-  }
-  */
 };
 
 const base_url = 'http://localhost:3000/api/v1';
 
-// ===== FUNCIONES POR CASO =====
-
-/**
- * TC-HU01-01: Consultar libro disponible por historial (RETURNED)
- * Verifica que un libro con estado RETURNED (devolución completada) sea interpretable como disponible
- * 
- * Endpoint: GET /loans/Don%20Quijote
- * Response: 200 OK con éxito=true, libro con id=B-0001, status=RETURNED
- */
 export function TC_HU01_01() {
   const start = Date.now();
   const url = `${base_url}/loans/Don%20Quijote`;
@@ -116,13 +93,6 @@ export function TC_HU01_01() {
   });
 }
 
-/**
- * TC-HU01-03: Consultar libro sin historial de préstamo
- * Verifica que un libro sin historial de préstamos se considere disponible
- * 
- * Endpoint: GET /loans/Manual%20de%20estanter%C3%ADas%20invisibles
- * Response: 200 OK con éxito=true, data=[] (sin historial), mensaje de disponibilidad
- */
 export function TC_HU01_03() {
   const start = Date.now();
   const url = `${base_url}/loans/Manual%20de%20estanter%C3%ADas%20invisibles`;

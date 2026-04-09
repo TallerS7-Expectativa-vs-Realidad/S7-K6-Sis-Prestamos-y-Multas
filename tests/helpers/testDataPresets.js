@@ -1,27 +1,7 @@
-/**
- * Test Data Presets — Generadores dinámicos para tests de escritura
- * 
- * PROBLEMA: Tests con 10 VUs × múltiples iteraciones necesitan datos únicos
- * para evitar conflictos de duplicados en operaciones de escritura (POST, PATCH).
- * 
- * SOLUCIÓN: Generar IDs dinámicos usando __VU + __ITER como discriminador único.
- * Cada combinación VU+iteración produce un conjunto de datos que nunca colisiona.
- * 
- * CATEGORÍAS:
- *   A) Lectura pura        → No necesita datos dinámicos (Casos 1, 2, 7)
- *   B) Creación             → IDs dinámicos por iteración (Caso 3)
- *   C) Mutación de estado   → Setup interno: POST crea → PATCH muta (Casos 4, 5, 6)
- *   D) Cadena multi-paso    → POST → PATCH late → extraer debt_id → PATCH debt (Caso 8)
- * 
- * USO:
- *   import { generateLoanData, setupAndReturn, setupLateAndPayDebt } from '../helpers/testDataPresets.js';
- */
-
 import http from 'k6/http';
 import { check } from 'k6';
 import exec from 'k6/execution';
 
-// ===== CONFIGURACIÓN =====
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000/api/v1';
 const TYPE_ID_OPTIONS = ['CI', 'DNI'];
 const BOOK_TITLES = [
@@ -37,14 +17,7 @@ const READER_NAMES = [
   'VU Reader Kappa'
 ];
 
-// ===== UTILIDADES =====
 
-/**
- * Genera un sufijo único para esta combinación escenario + VU + iteración.
- * Incluye el nombre del escenario para evitar colisiones cuando K6 reutiliza
- * los mismos VU IDs entre escenarios secuenciales.
- * Formato: {scenario}-{vu}-{iter} → garantiza unicidad global.
- */
 function uniqueSuffix() {
   const sn = exec.scenario.name;
   return `${sn}-${__VU}-${__ITER}`;
@@ -60,8 +33,6 @@ export function dateFromToday(daysOffset) {
   d.setDate(d.getDate() + daysOffset);
   return d.toISOString().split('T')[0];
 }
-
-// ===== CATEGORÍA B: Generadores para CREACIÓN (Caso 3) =====
 
 /**
  * Genera datos únicos para POST /loans (Caso 3: TC-HU02-01)
@@ -84,12 +55,11 @@ export function generateLoanData(overrides = {}) {
   };
 }
 
-// Alias legacy para compatibilidad con loans-registro.js existente
+
 export function generateTC_HU02_01() {
   return generateLoanData();
 }
 
-// ===== CATEGORÍA C: Setup → Action para MUTACIÓN (Casos 4, 5, 6) =====
 
 /**
  * Patrón setup→action para devoluciones.
@@ -116,7 +86,6 @@ export function setupAndReturn(opts) {
     loan_days: 7,
   };
 
-  // --- PASO 1: Crear préstamo (setup, no se mide) ---
   const setupRes = http.post(
     `${BASE_URL}/loans`,
     JSON.stringify(loanData),
@@ -126,7 +95,6 @@ export function setupAndReturn(opts) {
     }
   );
 
-  // Verificar que el setup fue exitoso
   const setupOk = check(setupRes, {
     '[setup] préstamo creado (201)': (r) => r.status === 201,
   });
@@ -135,7 +103,6 @@ export function setupAndReturn(opts) {
     return { setupRes, actionRes: null, loanData, dateReturn: null, setupFailed: true };
   }
 
-  // --- PASO 2: Devolver el préstamo (action, se mide) ---
   const dateReturn = dateFromToday(opts.returnDaysOffset);
   
   const returnPayload = {
@@ -145,7 +112,7 @@ export function setupAndReturn(opts) {
     date_return: dateReturn,
   };
 
-  // Agregar base_fib_amount solo si es devolución tardía
+
   if (opts.baseFibAmount !== undefined) {
     returnPayload.base_fib_amount = opts.baseFibAmount;
   }
@@ -162,7 +129,6 @@ export function setupAndReturn(opts) {
   return { setupRes, actionRes, loanData, dateReturn, setupFailed: false };
 }
 
-// ===== CATEGORÍA D: Cadena multi-paso para DEUDA (Caso 8) =====
 
 /**
  * Cadena completa: Crear préstamo → Devolver tarde → Extraer debt_id → Pagar deuda
@@ -190,7 +156,6 @@ export function setupLateAndPayDebt(opts) {
     loan_days: 7,
   };
 
-  // --- PASO 1: Crear préstamo ---
   const createRes = http.post(
     `${BASE_URL}/loans`,
     JSON.stringify(loanData),
@@ -204,9 +169,6 @@ export function setupLateAndPayDebt(opts) {
     return { payRes: null, debtId: null, setupFailed: true, loanData, step: 'create' };
   }
 
-  // --- PASO 2: Devolver tarde (genera deuda) ---
-  // loan_days=7, hoy es la fecha de creación, date_limit = hoy+7
-  // Devolver hoy+7+lateDays para generar mora
   const dateReturn = dateFromToday(7 + opts.lateDays);
 
   const returnRes = http.patch(
@@ -228,22 +190,17 @@ export function setupLateAndPayDebt(opts) {
     return { payRes: null, debtId: null, setupFailed: true, loanData, step: 'return' };
   }
 
-  // --- PASO 3: Extraer debt_id del response ---
   let debtId = null;
   try {
     const body = JSON.parse(returnRes.body);
     const data = body.data || body;
-    // Intentar múltiples campos posibles
     debtId = data.id_debt || data.debt_id || data.debtId
       || (data.debt && (data.debt.id_debt || data.debt.debt_id))
       || null;
   } catch {
-    // Si no viene en el response de PATCH, intentar consultar
   }
 
-  // Si no se pudo extraer del PATCH, intentar obtener deudas del lector
   if (!debtId) {
-    // Intentar endpoint de consulta de deudas si existe
     const debtRes = http.get(
       `${BASE_URL}/debts?id_reader=${loanData.id_reader}`,
       { tags: { name: 'setup_get_debt_id' } }
@@ -255,7 +212,6 @@ export function setupLateAndPayDebt(opts) {
         debtId = debts[0].id_debt || debts[0].debt_id;
       }
     } catch {
-      // No se pudo obtener debtId
     }
   }
 
@@ -263,7 +219,6 @@ export function setupLateAndPayDebt(opts) {
     return { payRes: null, debtId: null, setupFailed: true, loanData, step: 'extract_debt_id' };
   }
 
-  // --- PASO 4: Pagar la deuda (action, se mide) ---
   const payRes = http.patch(
     `${BASE_URL}/debts/${debtId}`,
     JSON.stringify({ state_debt: 'PAID' }),
@@ -276,26 +231,17 @@ export function setupLateAndPayDebt(opts) {
   return { payRes, debtId, setupFailed: false, loanData, step: 'complete' };
 }
 
-// ===== DATOS ESTÁTICOS (para referencia en checks) =====
-
-/**
- * Datos estáticos del seed para casos de solo lectura.
- * Usados en checks para validar contenido esperado.
- */
 export const SEED_DATA = {
-  // Caso 1: Don Quijote (lectura)
   TC_HU01_01: {
     bookName: 'Don Quijote',
     bookNameEncoded: 'Don%20Quijote',
     expectedId: 'B-0001',
     expectedStatus: 'RETURNED',
   },
-  // Caso 2: Libro sin historial (lectura)
   TC_HU01_03: {
     bookName: 'Manual de estanterías invisibles',
     bookNameEncoded: 'Manual%20de%20estanter%C3%ADas%20invisibles',
   },
-  // Caso 7: Préstamos vencidos (lectura)
   TC_HU05_01: {
     expectedVencidos: ['B-2001', 'B-2002'],
   },

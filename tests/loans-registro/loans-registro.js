@@ -1,21 +1,10 @@
-/**
- * Tests de Performance - Grupo: loans-registro
- * Casos de registro de préstamos de libros
- * Base URL: http://localhost:3000/api/v1
- * 
- * IMPORTANTE: Los datos se generan dinámicamente para evitar conflictos
- * cuando múltiples VUs ejecutan en paralelo. Ver helpers/testDataPresets.js
- */
-
 import http from 'k6/http';
 import { sleep, check } from 'k6';
 import { Trend } from 'k6/metrics';
 import { generateTC_HU02_01 } from '../helpers/testDataPresets.js';
 
-// ===== CUSTOM METRICS =====
 const TC_HU02_01_duration = new Trend('TC_HU02_01_duration');
 
-// ===== CONFIGURACIÓN =====
 const optionsGeneral = {
   executor: 'constant-vus',
   vus: 10,
@@ -30,43 +19,15 @@ export const options = {
       startTime: '0s'
     },
   },
-  /*
-  thresholds: {
-    'TC_HU02_01_duration': ['p(95)<500'],
-  }
-  */
 };
 
 const base_url = 'http://localhost:3000/api/v1';
 
-// ===== FUNCIONES POR CASO =====
 
-/**
- * TC-HU02-01: Registrar préstamo exitoso
- * Verifica que se cree un registro de préstamo exitosamente con los datos esperados
- * 
- * Endpoint: POST /loans
- * Request Body: { id_book, title, type_id_reader, id_reader, name_reader, loan_days }
- * Response: 201 Created con estado ON_LOAN, sin fecha de retorno, plazo de 7 días
- * 
- * Datos dinámicos: Cada VU + iteración genera IDs únicos para evitar conflictos
- * Correlación: TEST_CASES.md → HU-02 → TC-HU02-01
- * 
- * Precondiciones (pre-seed):
- * - Libro disponible (sin préstamo activo)
- * - Lector sin deuda pendiente
- * 
- * Parámetros:
- * - VUs: 10 usuarios virtuales en paralelo
- * - Duración: 10 segundos por VU
- * - Cada iteración crea un préstamo único
- */
 export function TC_HU02_01() {
   const start = Date.now();
   const url = `${base_url}/loans`;
   
-  // IMPORTANTE: Generar datos dinámicos para cada VU + iteración
-  // Evita conflictos de duplicate key cuando múltiples VUs crean préstamos
   const loanData = generateTC_HU02_01();
   
   const payload = JSON.stringify({
@@ -85,7 +46,6 @@ export function TC_HU02_01() {
     tags: { name: 'TC_HU02_01' },
   });
   
-  // DEBUG: Ver qué responde la API cuando falla (quitar después de diagnosticar)
   if (res.status !== 201) {
     console.warn(`[TC_HU02_01] VU=${__VU} ITER=${__ITER} status=${res.status} body=${res.body}`);
   }

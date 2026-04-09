@@ -1,17 +1,9 @@
-/**
- * Tests de Performance - Grupo: loans-vencidos
- * Casos de consulta de préstamos vencidos
- * Base URL: http://localhost:3000/api/v1
- */
-
 import http from 'k6/http';
 import { sleep, check } from 'k6';
 import { Trend } from 'k6/metrics';
 
-// ===== CUSTOM METRICS =====
 const TC_HU05_01_duration = new Trend('TC_HU05_01_duration');
 
-// ===== CONFIGURACIÓN =====
 const optionsGeneral = {
   executor: 'constant-vus',
   vus: 10,
@@ -26,25 +18,10 @@ export const options = {
       startTime: '0s'
     },
   },
-  /*
-  thresholds: {
-    'TC_HU05_01_duration': ['p(95)<500'],
-  }
-  */
 };
 
 const base_url = 'http://localhost:3000/api/v1';
 
-// ===== FUNCIONES POR CASO =====
-
-/**
- * TC-HU05-01: Consultar préstamos vencidos con resultados
- * Verifica que el endpoint retorna los préstamos con state=ON_LOAN y date_limit vencida
- * 
- * Endpoint: GET /loans/outTime
- * Response: 200 OK con success=true, data con préstamos vencidos del seed (B-2001, B-2002)
- * Data Strategy: READ_ONLY — lectura idempotente, sin conflictos con múltiples VUs
- */
 export function TC_HU05_01() {
   const start = Date.now();
   const url = `${base_url}/loans/outTime`;
