@@ -1,7 +1,6 @@
-===================================================================== \
-  EJERCICIO 1 - CONCLUSIONES Y HALLAZGOS \
+  EJERCICIO 1 - CONCLUSIONES Y HALLAZGOS
   Prueba de Carga de endpoints API gestor de préstamos y multas de biblioteca
-===================================================================== \
+
 
 # DESCRIPCIÓN DE LA PRUEBA
 ───────────────────────── \
@@ -21,7 +20,7 @@
 ──────────────────────── \
   [1] TPS mínimo             : 20 transacciones por segundo \
   [2] Tiempo de respuesta    : p(95) ≤ 500 ms \
-  [3] Tasa de error máxima   : < 5% del total de peticiones \
+  [3] Tasa de error máxima   : < 5% del total de peticiones
 
 
 # RESULTADOS
@@ -174,10 +173,10 @@ TC_HU06_01 ✓ [======================================] 10 VUs  10s
 
   2. TIEMPO DE RESPUESTA \
      ──────────────────── \
-     La API respondió de forma estable en condiciones normales: \
-       - Promedio (avg) : 29.06 ms \
-       - Percentil 90   : 45.54 ms \
-       - Percentil 95   : 54.38 ms \
+     La API respondió de forma estable en condiciones normales: 
+       - Promedio (avg) : 29.06 ms 
+       - Percentil 90   : 45.54 ms 
+       - Percentil 95   : 54.38 ms 
        - Máximo         : 362.51 ms
 
      → Criterio [2] CUMPLIDO ✓
@@ -204,4 +203,4 @@ TC_HU06_01 ✓ [======================================] 10 VUs  10s
 ───────────────
   1. Desplegar el sistema en el entorno de producción y validar que se cumplan las espectativas de rendimiento en la realidad.
 
-=====================================================================
+
