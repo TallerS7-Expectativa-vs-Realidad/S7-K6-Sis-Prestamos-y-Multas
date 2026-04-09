@@ -120,7 +120,7 @@ Timing duration: 500ms
 Test Type: SMOKE
 Data Strategy: SETUP_ACTION
 Notas: Prioridad Crítica. Patrón setup→action. Cada iteración: 1) POST /loans crea préstamo (setup), 2) PATCH devuelve 1 día tarde (action). Usar setupAndReturn({ returnDaysOffset: 8, baseFibAmount: 2.00 }). loan_days=7 → limit=hoy+7 → return=hoy+8 → 1 día mora → fib(1)=1 → 1×2.00=2.00.
-Status: NOT_IMPLEMENTED
+Status: IMPLEMENTED
 
 ## Caso 6
 id: TC-HU04-05
