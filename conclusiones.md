@@ -1,22 +1,27 @@
-=====================================================================
-  EJERCICIO 1 - CONCLUSIONES Y HALLAZGOS
-  Prueba de Carga: Login FakeStore API con K6
-=====================================================================
+===================================================================== \
+  EJERCICIO 1 - CONCLUSIONES Y HALLAZGOS \
+  Prueba de Carga de endpoints API gestor de préstamos y multas de biblioteca
+===================================================================== \
 
 # DESCRIPCIÓN DE LA PRUEBA
-─────────────────────────
-  Servicio probado : POST https://fakestoreapi.com/auth/login
-  Herramienta      : K6 v0.55.0
-  Duración total   : 50s minutos
-  Escenario        : Ramping VUs (0 → 10 → 30 → 50 → 0 VUs)
-         (Aumentar VUs por etapa para aumentar TPs)
-  Datos de entrada : 5 pares usuario/contraseña desde usuarios.csv
+───────────────────────── \
+  Servicios probado : 
+  -  GET url-base`/loans/{bookName}`
+  -  POST url-base`/loans`
+  -  PATCH url-base`/loans`
+  -  GET url-base`/loans/outTime`
+  -  PATCH url-base`/debts/{debt_id}`
+  Herramienta      : K6 v0.55.0 \
+  Duración total   : 80s minutos \
+  Datos de entrada :
+  - Casos con datos de prueba harcodeados
+  - Casos con datos generados automáticamente
 
 # CRITERIOS DE ACEPTACIÓN
-────────────────────────
-  [1] TPS mínimo             : 20 transacciones por segundo
-  [2] Tiempo de respuesta    : p(95) ≤ 1500 ms
-  [3] Tasa de error máxima   : < 3% del total de peticiones
+──────────────────────── \
+  [1] TPS mínimo             : 20 transacciones por segundo \
+  [2] Tiempo de respuesta    : p(95) ≤ 500 ms \
+  [3] Tasa de error máxima   : < 5% del total de peticiones \
 
 
 # RESULTADOS
@@ -161,24 +166,24 @@ TC_HU06_01 ✓ [======================================] 10 VUs  10s
 # HALLAZGOS
 ──────────
 
-  1. RENDIMIENTO (TPS)
-     ─────────────────
+  1. RENDIMIENTO (TPS) \
+     ───────────────── \
      El sistema alcanzó un TPS promedio de 156.84 req/s
 
      → Criterio [1] CUMPLIDO ✓
 
-  2. TIEMPO DE RESPUESTA
-     ────────────────────
-     La API respondió de forma estable en condiciones normales:
-       - Promedio (avg) : 29.06 ms
-       - Percentil 90   : 45.54 ms
-       - Percentil 95   : 54.38 ms
+  2. TIEMPO DE RESPUESTA \
+     ──────────────────── \
+     La API respondió de forma estable en condiciones normales: \
+       - Promedio (avg) : 29.06 ms \
+       - Percentil 90   : 45.54 ms \
+       - Percentil 95   : 54.38 ms \
        - Máximo         : 362.51 ms
 
      → Criterio [2] CUMPLIDO ✓
 
-  3. TASA DE ERROR
-     ──────────────
+  3. TASA DE ERROR \
+     ────────────── \
      Se devuelven correctamente todas las respuestas HTTP 200 y 201.
 
      Tasa de errores observada: 0%
@@ -187,28 +192,16 @@ TC_HU06_01 ✓ [======================================] 10 VUs  10s
 
 # CONCLUSIONES
 ────────────
-  1. El script cumple con los tres criterios de aceptación definidos
-     para la prueba de carga del servicio de login.
+  1. El script cumple con los tres criterios de aceptación definidos para la prueba de carga del servicio de login.
 
-  2. El servicio de FakeStore API tiene un rendimiento aceptable para
-     cargas de hasta  50 VUs concurrentes; los resultados muestran también
-     que hay margen para aumentar la cantidad de VUs concurrentes.
+  2. El servicio rendimiento aceptable para las cargas con 10 VUs concurrentes; lo cual es muy superior a lo que realmente va a suceder en el sistema real.
 
-  3. La parametrización mediante CSV funciona correctamente: K6 itera
-     de forma circular sobre los 5 usuarios, distribuyendo la carga
-     entre todas las credenciales disponibles.
+  3. Esta evaluación no se probó en el sistema desplegado real por lo que los tiempos pueden variar. Sin embargo, al no superar los 500ms, esos nos da un gran marjen de aceptación debido a que el sistema real no alcanzará estos niveles de estrés.
 
-   4. Las validaciones implementadas (status 201, presencia de token y
-      tiempo < 1500 ms) son suficientes para detectar regresiones
-      funcionales y de performance en futuras ejecuciones.
+  4. 500ms es uan espectativa muy alta y al probarse en el entorno de desarrollo, este límite puede superarse en algunas etapas de pruebas. Los casos más propensos a que esto suceda son TC_HU02_01, TC_HU03_01, TC_HU04_01 y TC_HU06_01 
 
 # RECOMENDACIONES
 ───────────────
-  1. Agregar más credenciales válidas al CSV para evitar que los
-     errores 401 eleven artificialmente la tasa de error cuando se
-     escala la prueba.
-
-  2. Buscar la cantidad de VUs máximos que alcancen el límite de 
-     aceptación de TPS para conocer el margen de rendimiento.
+  1. Desplegar el sistema en el entorno de producción y validar que se cumplan las espectativas de rendimiento en la realidad.
 
 =====================================================================
