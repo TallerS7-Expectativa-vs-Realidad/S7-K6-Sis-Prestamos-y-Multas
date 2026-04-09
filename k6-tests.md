@@ -190,5 +190,5 @@ Timing duration: 500ms
 Test Type: SMOKE
 Data Strategy: MULTI_STEP_CHAIN
 Notas: Cadena multi-paso. Cada iteración: 1) POST /loans crea préstamo (setup), 2) PATCH /loans devuelve tarde generando deuda (setup), 3) Extraer debt_id del response, 4) PATCH /debts/{debt_id} paga la deuda (action, medido). Usar setupLateAndPayDebt({ lateDays: 1, baseFibAmount: 2.00 }) de testDataPresets.js. El debt_id es dinámico — no se puede usar un ID fijo porque cada iteración genera una deuda nueva.
-Status: NOT_IMPLEMENTED
+Status: IMPLEMENTED
 
