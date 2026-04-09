@@ -139,7 +139,6 @@ Request Body:
 Response Code: 200
 Response JSON:
   - days_late=22
-  - weeks=4
   - units_fib=7
   - amount_debt=14.00
 Headers: Content-Type: application/json
@@ -147,7 +146,7 @@ Timing duration: 500ms
 Test Type: SMOKE
 Data Strategy: SETUP_ACTION
 Notas: Patrón setup→action. Cada iteración: 1) POST /loans crea préstamo (setup), 2) PATCH devuelve 22 días tarde (action). Usar setupAndReturn({ returnDaysOffset: 29, baseFibAmount: 2.00, typeIdReader: 'TI' }). loan_days=7 → limit=hoy+7 → return=hoy+29 → 22 días mora → semana 4 → fib(4)=7 → 7×2.00=14.00.
-Status: NOT_IMPLEMENTED
+Status: IMPLEMENTED
 
 ---
 
