@@ -165,7 +165,7 @@ Timing duration: 500ms
 Test Type: SMOKE
 Data Strategy: READ_ONLY
 Notas: Prioridad Crítica. Lectura idempotente — sin conflictos con múltiples VUs. Solo se listan préstamos con state=ON_LOAN y date_limit < hoy. El seed proporciona B-2001 y B-2002 como vencidos. Validar que data sea array con length >= 2 y que cada elemento tenga state=ON_LOAN y date_return=null.
-Status: NOT_IMPLEMENTED
+Status: IMPLEMENTED
 
 ---
 

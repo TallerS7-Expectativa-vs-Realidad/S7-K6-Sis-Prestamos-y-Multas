@@ -10,6 +10,7 @@ import { TC_HU01_01, TC_HU01_03 } from './tests/loans-consulta/loans-consulta.js
 import { TC_HU02_01 } from './tests/loans-registro/loans-registro.js';
 import { TC_HU03_01 } from './tests/devoluciones/devoluciones.js';
 import { TC_HU04_01, TC_HU04_05 } from './tests/devoluciones-tardias/devoluciones-tardias.js';
+import { TC_HU05_01 } from './tests/loans-vencidos/loans-vencidos.js';
 
 // ===== PASO 2: CONFIGURAR scenarios que las ejecutan =====
 const optionsGeneral = {
@@ -57,8 +58,15 @@ export const options = {
       exec: 'TC_HU04_05',
       startTime: '50s'
     },
+
+    // Loans Vencidos: 60-70s
+    TC_HU05_01: {
+      ...optionsGeneral,
+      exec: 'TC_HU05_01',
+      startTime: '60s'
+    },
   },
 };
 
 // ===== PASO 3: RE-EXPORTAR funciones importadas =====
-export { TC_HU01_01, TC_HU01_03, TC_HU02_01, TC_HU03_01, TC_HU04_01, TC_HU04_05 };
+export { TC_HU01_01, TC_HU01_03, TC_HU02_01, TC_HU03_01, TC_HU04_01, TC_HU04_05, TC_HU05_01 };
