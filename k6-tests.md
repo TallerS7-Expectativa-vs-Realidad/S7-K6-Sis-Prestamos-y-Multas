@@ -60,7 +60,8 @@ Response JSON:
 Headers: Content-Type: application/json
 Timing duration: 500ms
 Test Type: SMOKE
-Notas: Prioridad Crítica. Libro disponible + lector sin deuda + plazo válido (7 días).
+Data Strategy: DYNAMIC_IDS
+Notas: Prioridad Crítica. Libro disponible + lector sin deuda + plazo válido (7 días). STRESS: Usar generateLoanData() de testDataPresets.js para generar id_book=B-K6-{VU}-{ITER} e id_reader=R-K6-{VU}-{ITER} únicos por iteración. El body del k6-tests.md es referencia; el test real usa datos dinámicos.
 Status: IMPLEMENTED
 
 ---
@@ -73,22 +74,23 @@ API URL: /loans
 Request Method: PATCH
 Request Body:
   {
-    "id_book": "B-1101",
-    "id_reader": "R-2101",
+    "id_book": "(dinámico)",
+    "id_reader": "(dinámico)",
     "type_id_reader": "CI",
-    "date_return": "2026-04-08"
+    "date_return": "(hoy + 5 días, antes del límite)"
   }
 Response Code: 200
 Response JSON:
   - state=RETURNED
-  - date_return=2026-04-08
+  - date_return=(fecha enviada)
   - days_late=0 o equivalente
   - No se crea deuda nueva en debt_reader
 Headers: Content-Type: application/json
 Timing duration: 500ms
 Test Type: SMOKE
-Notas: Préstamo activo con date_limit=2026-04-10. Devolución 2 días antes.
-Status: NOT_IMPLEMENTED
+Data Strategy: SETUP_ACTION
+Notas: Patrón setup→action. Cada iteración: 1) POST /loans crea préstamo con IDs únicos (setup, no medido), 2) PATCH /loans devuelve antes del plazo (action, medido). Usar setupAndReturn({ returnDaysOffset: 5 }) de testDataPresets.js. loan_days=7 → date_limit=hoy+7 → devolver hoy+5 = 2 días antes.
+Status: IMPLEMENTED
 
 ---
 
@@ -100,10 +102,10 @@ API URL: /loans
 Request Method: PATCH
 Request Body:
   {
-    "id_book": "B-1201",
-    "id_reader": "R-2201",
+    "id_book": "(dinámico)",
+    "id_reader": "(dinámico)",
     "type_id_reader": "CI",
-    "date_return": "2026-04-11",
+    "date_return": "(hoy + 8 días, 1 día después del límite)",
     "base_fib_amount": 2.00
   }
 Response Code: 200
@@ -116,7 +118,8 @@ Response JSON:
 Headers: Content-Type: application/json
 Timing duration: 500ms
 Test Type: SMOKE
-Notas: Prioridad Crítica. date_limit=2026-04-10. 1 día mora → semana 1 → fib(1)=1 → 1×2.00=2.00.
+Data Strategy: SETUP_ACTION
+Notas: Prioridad Crítica. Patrón setup→action. Cada iteración: 1) POST /loans crea préstamo (setup), 2) PATCH devuelve 1 día tarde (action). Usar setupAndReturn({ returnDaysOffset: 8, baseFibAmount: 2.00 }). loan_days=7 → limit=hoy+7 → return=hoy+8 → 1 día mora → fib(1)=1 → 1×2.00=2.00.
 Status: NOT_IMPLEMENTED
 
 ## Caso 6
@@ -127,10 +130,10 @@ API URL: /loans
 Request Method: PATCH
 Request Body:
   {
-    "id_book": "B-1205",
-    "id_reader": "R-2205",
-    "type_id_reader": "TI",
-    "date_return": "2026-05-02",
+    "id_book": "(dinámico)",
+    "id_reader": "(dinámico)",
+    "type_id_reader": "DNI",
+    "date_return": "(hoy + 29 días, 22 días después del límite)",
     "base_fib_amount": 2.00
   }
 Response Code: 200
@@ -142,7 +145,8 @@ Response JSON:
 Headers: Content-Type: application/json
 Timing duration: 500ms
 Test Type: SMOKE
-Notas: date_limit=2026-04-10. 22 días mora → semana 4 → fib(4)=7 → 7×2.00=14.00.
+Data Strategy: SETUP_ACTION
+Notas: Patrón setup→action. Cada iteración: 1) POST /loans crea préstamo (setup), 2) PATCH devuelve 22 días tarde (action). Usar setupAndReturn({ returnDaysOffset: 29, baseFibAmount: 2.00, typeIdReader: 'TI' }). loan_days=7 → limit=hoy+7 → return=hoy+29 → 22 días mora → semana 4 → fib(4)=7 → 7×2.00=14.00.
 Status: NOT_IMPLEMENTED
 
 ---
@@ -155,12 +159,13 @@ API URL: /loans/outTime
 Request Method: GET
 Response Code: 200
 Response JSON:
-  - data contiene al menos L-5001 y L-5002
-  - count=2 o equivalente
+  - success=true
+  - data contiene al menos los libros vencidos del seed (B-2001, B-2002 u otros con state=ON_LOAN y date_limit vencida)
   - Cada elemento expone loan_id, id_book, title, state=ON_LOAN, id_reader, name_reader, date_limit, date_return=null
 Timing duration: 500ms
 Test Type: SMOKE
-Notas: Prioridad Crítica. Solo se listan préstamos con state=ON_LOAN y date_limit vencida. Sin body ni query params.
+Data Strategy: READ_ONLY
+Notas: Prioridad Crítica. Lectura idempotente — sin conflictos con múltiples VUs. Solo se listan préstamos con state=ON_LOAN y date_limit < hoy. El seed proporciona B-2001 y B-2002 como vencidos. Validar que data sea array con length >= 2 y que cada elemento tenga state=ON_LOAN y date_return=null.
 Status: NOT_IMPLEMENTED
 
 ---
@@ -169,7 +174,7 @@ Status: NOT_IMPLEMENTED
 id: TC-HU06-01
 título: Registrar pago total de deuda pendiente
 Group: deudas
-API URL: /debts/D-6001
+API URL: /debts/{debt_id}
 Request Method: PATCH
 Request Body:
   {
@@ -178,13 +183,13 @@ Request Body:
 Response Code: 200
 Response JSON:
   - success=true
-  - data.id_debt=D-6001
   - data.state_debt=PAID
   - amount_debt se conserva como valor histórico
   - El lector deja de figurar bloqueado
 Headers: Content-Type: application/json
 Timing duration: 500ms
 Test Type: SMOKE
-Notas: Deuda PENDING → PAID. El lector queda rehabilitado.
+Data Strategy: MULTI_STEP_CHAIN
+Notas: Cadena multi-paso. Cada iteración: 1) POST /loans crea préstamo (setup), 2) PATCH /loans devuelve tarde generando deuda (setup), 3) Extraer debt_id del response, 4) PATCH /debts/{debt_id} paga la deuda (action, medido). Usar setupLateAndPayDebt({ lateDays: 1, baseFibAmount: 2.00 }) de testDataPresets.js. El debt_id es dinámico — no se puede usar un ID fijo porque cada iteración genera una deuda nueva.
 Status: NOT_IMPLEMENTED
 

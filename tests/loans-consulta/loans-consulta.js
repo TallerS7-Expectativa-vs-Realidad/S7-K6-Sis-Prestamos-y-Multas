@@ -114,8 +114,6 @@ export function TC_HU01_01() {
     },
     '(TC_HU01_01) response time < 500ms': (r) => r.timings.duration < 500,
   });
-  
-  sleep(1);
 }
 
 /**
@@ -172,6 +170,4 @@ export function TC_HU01_03() {
     },
     '(TC_HU01_03) response time < 500ms': (r) => r.timings.duration < 500,
   });
-  
-  sleep(1);
 }

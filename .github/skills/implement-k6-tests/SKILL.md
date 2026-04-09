@@ -48,6 +48,7 @@ Cada caso de test se define como un bloque `##` con campos clave-valor. El agent
 | `Params` / `Query Params` | No | Parámetros de query string |
 | `Auth` / `Authorization` | No | Tipo de autenticación requerida |
 | `Test Type` / `tipo` | No | SMOKE (default), LOAD, STRESS, SPIKE, SOAK |
+| `Data Strategy` | No | Estrategia de datos para estrés: `READ_ONLY`, `DYNAMIC_IDS`, `SETUP_ACTION`, `MULTI_STEP_CHAIN` |
 | `Notas` / `notes` | No | Información adicional para el agente |
 
 ### Ejemplo de `k6-tests.md`
@@ -125,6 +126,82 @@ Auth:
   - API9: DELETE /api/verifyLogin
   - API10: POST /api/verifyLogin (invalid details)
 ```
+
+## Campo DATA STRATEGY — Estrategia de datos para estrés
+
+Cuando los tests se ejecutan con múltiples VUs e iteraciones (ej: 10 VUs × 10 iter = 100 ejecuciones), las operaciones de escritura (POST, PATCH) necesitan datos únicos para evitar conflictos de duplicados. El campo `Data Strategy` indica al agente qué patrón usar.
+
+| Estrategia | Descripción | Cuándo usar |
+|------------|-------------|-------------|
+| `READ_ONLY` | Sin datos dinámicos. Lectura idempotente | GET endpoints que no mutan estado |
+| `DYNAMIC_IDS` | Generar IDs únicos por VU+iteración | POST que crean registros nuevos |
+| `SETUP_ACTION` | Cada iteración: 1) POST crea dato (setup), 2) PATCH lo muta (action medido) | PATCH/PUT que necesitan un registro previo |
+| `MULTI_STEP_CHAIN` | Cadena de N pasos setup → acción final medida | Flujos que dependen de múltiples pasos previos |
+
+### Lógica de implementación por estrategia
+
+**READ_ONLY:** Implementar normalmente. Usar datos del seed o URLs estáticas.
+
+**DYNAMIC_IDS:**
+```javascript
+import { generateLoanData } from '../helpers/testDataPresets.js';
+
+export function TC_CASE() {
+  const data = generateLoanData(); // IDs únicos: B-K6-{VU}-{ITER}
+  const res = http.post(url, JSON.stringify(data), { headers, tags });
+  // checks sobre res...
+}
+```
+
+**SETUP_ACTION:**
+```javascript
+import { setupAndReturn } from '../helpers/testDataPresets.js';
+
+export function TC_CASE() {
+  const start = Date.now();
+  // Setup (POST) + Action (PATCH) en una sola llamada
+  const { actionRes: res, setupFailed } = setupAndReturn({
+    returnDaysOffset: 5,      // Días desde hoy para date_return
+    baseFibAmount: 2.00,      // Solo para devoluciones tardías
+    typeIdReader: 'CI',       // Opcional
+    actionTag: 'TC_CASE',     // Tag para métricas
+  });
+  if (setupFailed || !res) {
+    check(null, { '[SKIP] setup falló': () => false });
+    sleep(1); return;
+  }
+  customMetric.add(Date.now() - start);
+  // checks sobre res...
+}
+```
+
+**MULTI_STEP_CHAIN:**
+```javascript
+import { setupLateAndPayDebt } from '../helpers/testDataPresets.js';
+
+export function TC_CASE() {
+  const start = Date.now();
+  // POST → PATCH late → extract debt_id → PATCH pay
+  const { payRes: res, setupFailed, debtId } = setupLateAndPayDebt({
+    lateDays: 1,
+    baseFibAmount: 2.00,
+  });
+  if (setupFailed || !res) {
+    check(null, { '[SKIP] setup chain falló': () => false });
+    sleep(1); return;
+  }
+  customMetric.add(Date.now() - start);
+  // checks sobre res...
+}
+```
+
+### Reglas del campo Data Strategy
+
+1. Si el campo NO está presente → asumir `READ_ONLY` para GET, `DYNAMIC_IDS` para POST/PUT/DELETE/PATCH
+2. Si está presente → **OBLIGATORIO** usar el patrón indicado
+3. Las funciones helper están en `tests/helpers/testDataPresets.js`
+4. El campo `Request Body` con valores `(dinámico)` indica que los datos se generan en runtime
+5. Las `Notas` del caso contienen el nombre exacto de la función helper y sus parámetros
 
 ## Campo STATUS
 

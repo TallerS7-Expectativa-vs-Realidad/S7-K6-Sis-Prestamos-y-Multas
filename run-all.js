@@ -8,6 +8,7 @@
 // ===== PASO 1: IMPORTAR funciones desde los archivos de grupo =====
 import { TC_HU01_01, TC_HU01_03 } from './tests/loans-consulta/loans-consulta.js';
 import { TC_HU02_01 } from './tests/loans-registro/loans-registro.js';
+import { TC_HU03_01 } from './tests/devoluciones/devoluciones.js';
 
 // ===== PASO 2: CONFIGURAR scenarios que las ejecutan =====
 const optionsGeneral = {
@@ -36,8 +37,15 @@ export const options = {
       exec: 'TC_HU02_01',
       startTime: '20s'
     },
+
+    // Devoluciones: 30-40s
+    TC_HU03_01: {
+      ...optionsGeneral,
+      exec: 'TC_HU03_01',
+      startTime: '30s'
+    },
   },
 };
 
 // ===== PASO 3: RE-EXPORTAR funciones importadas =====
-export { TC_HU01_01, TC_HU01_03, TC_HU02_01 };
+export { TC_HU01_01, TC_HU01_03, TC_HU02_01, TC_HU03_01 };
